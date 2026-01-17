@@ -4,3 +4,5 @@ moviepy>=2.0.0
 rich
 python-dotenv
 Pillow
+streamlit
+watchdog

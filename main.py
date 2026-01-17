@@ -45,7 +45,7 @@ def load_manifest(filepath="manifest.json"):
 
 def main():
     parser = argparse.ArgumentParser(description="The Human Override - Video Generation Pipeline")
-    parser.add_argument("command", choices=["parse", "assets", "render", "build"], help="Pipeline stage to run")
+    parser.add_argument("command", choices=["parse", "assets", "render", "build", "ui"], help="Pipeline stage to run")
     parser.add_argument("--input", default=os.path.join(Config.INPUT_DIR, "script.txt"), help="Path to input script text file")
     parser.add_argument("--mock", action="store_true", help="Run in Mock Mode (no API costs)")
     parser.add_argument("--audio-mode", choices=["tts", "external"], default="tts", help="Audio generation mode")
@@ -67,6 +67,13 @@ def main():
 
     # Pipeline State
     manifest = None
+
+    # --- UI MODE ---
+    if args.command == "ui":
+        console.rule("[bold blue]Launching Director Mode UI[/bold blue]")
+        import subprocess
+        subprocess.run(["streamlit", "run", "src/app.py"])
+        return
 
     # --- STAGE 1: PARSE ---
     if args.command in ["parse", "build"]:
