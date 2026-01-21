@@ -126,6 +126,7 @@ class VideoRenderer:
             output_path,
             fps=self.fps,
             codec="libx264",
-            audio_codec="aac"
+            audio_codec="aac",
+            threads=4
         )
         logger.info("Rendering complete.")
