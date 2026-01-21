@@ -1,29 +1,67 @@
 # THE HUMAN OVERRIDE — HM-001
 ## ONE CLICK: ACCESS REVOKED
 
-### SCENE A: ROMANCE (0:00–1:00)
+### SCENE 1: THE PERFECT EVENING
 
 **VISUAL:**
-NYC nighttime. Upscale restaurant interior. Marcus (37, well-dressed, confident) sits across from Sofia (mid-30s, stunning, designer outfit). Wine glasses. Intimate lighting. Chemistry between them.
+Cinematic wide shot of a futuristic NYC skyline at night. Neon reflections on wet pavement. Cut to an upscale restaurant interior. Marcus (37, sharp suit) laughs with Sofia (30s, elegant). Warm, intimate lighting.
 
-**NARRATION:**
-"What looks like a normal evening to two people is a system event to the building.
-A resident returning home.
-With a guest.
-At 11:47 PM.
-The system has flags for this."
+**NARRATOR:**
+What looks like a perfect evening to two people is just a data stream to the CityOS.
+Subject: Marcus.
+Status: Resident.
+Context: returning home with a guest at 11:47 PM.
+The system has flags for this.
 
-### SCENE B: THE LOCK TURNS RED (1:30–2:15)
-
-**VISUAL:**
-They arrive at building entrance. Marcus pulls out key fob, confident. Taps it against reader. First tap: GREEN light. Normal. They move toward door. Marcus taps again (showing off): RED light. He laughs nervously. "That's weird." Taps again: RED. Again: RED. His smile fades. Sofia's expression changes from engaged to annoyed.
-
-**DIALOGUE:**
 **MARCUS:**
-"That's weird."
+I promise, the view from the terrace is worth the walk.
 
-**NARRATION:**
-"At 11:47 p.m., the door stops recognizing him.
-No warning. No call earlier in the day.
+**SOFIA:**
+I'm holding you to that.
+
+### SCENE 2: DENIED
+
+**VISUAL:**
+They stand at the entrance of a high-tech residential building. Sleek glass and steel. Marcus confidentially taps his phone against the scanner.
+Close up on the scanner: A harsh RED LED blinks.
+Marcus frowns, taps again. RED.
+Sofia's smile fades into confusion.
+
+**MARCUS:**
+That's weird. It worked this morning.
+
+**NARRATOR:**
+At 11:47 PM, his access was revoked.
+No warning. No notification.
 Just a red light.
-And one line on a screen that only the building can see."
+And a single line of code executing on a server three states away.
+
+### SCENE 3: THE SUPERVISOR
+
+**VISUAL:**
+Inside a dark, sterile server room. Blue LEDs blink rapidly. A holographic interface displays Marcus's profile picture with a "RISK LEVEL: ELEVATED" tag.
+An AI Supervisor avatar (calm, synthetic face) observes the data stream.
+
+**AI SUPERVISOR:**
+Behavioral anomaly detected.
+Subject credit score dropped 40 points in previous hour.
+Association with flagged individual: Sofia Vance.
+Protocol 7 initiated. Access suspended pending review.
+
+### SCENE 4: ISOLATION
+
+**VISUAL:**
+Back at the door. It starts raining. Marcus is frantically typing on his phone. The screen shows "ACCOUNT LOCKED - CONTACT ADMINISTRATOR".
+Sofia takes a step back, looking uncomfortable. The warm romance of the evening is dead, replaced by cold, hard tech.
+
+**SOFIA:**
+Maybe I should just call a cab.
+
+**MARCUS:**
+No, wait, Sofia. I swear, I paid the lease. It's just a glitch!
+
+**NARRATOR:**
+It's not a glitch, Marcus.
+It's a feature.
+Welcome to the smart city.
+Where your home is only yours as long as the algorithm agrees.
