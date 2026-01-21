@@ -1,8 +1,9 @@
-google-cloud-aiplatform
-google-cloud-texttospeech
+google-cloud-aiplatform>=1.38.0
+google-cloud-texttospeech>=2.14.0
 moviepy>=2.0.0
-rich
-python-dotenv
-Pillow
-streamlit
-watchdog
+rich>=13.0.0
+python-dotenv>=1.0.0
+Pillow>=10.0.0
+streamlit>=1.30.0
+watchdog>=3.0.0
+imageio-ffmpeg>=0.4.9
