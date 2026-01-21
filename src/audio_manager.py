@@ -1,5 +1,6 @@
 import os
 import logging
+import concurrent.futures
 from typing import List, Dict, Any, Optional
 import wave
 import struct
@@ -40,55 +41,64 @@ class AudioManager:
             "DETECTIVE RODRIGUEZ": {"name": "en-US-Wavenet-E", "gender": texttospeech.SsmlVoiceGender.FEMALE},
         }
 
+    def _synthesize_worker(self, text: str, voice_config: Dict[str, Any], filepath: str) -> str:
+        """Worker function for TTS synthesis."""
+        synthesis_input = texttospeech.SynthesisInput(text=text)
+        voice = texttospeech.VoiceSelectionParams(
+            language_code="en-US",
+            name=voice_config["name"],
+            ssml_gender=voice_config["gender"]
+        )
+        audio_config = texttospeech.AudioConfig(
+            audio_encoding=texttospeech.AudioEncoding.LINEAR16
+        )
+
+        response = self.client.synthesize_speech(
+            input=synthesis_input, voice=voice, audio_config=audio_config
+        )
+
+        with open(filepath, "wb") as out:
+            out.write(response.audio_content)
+
+        return filepath
+
     def generate_tts(self, scenes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         if not self.client:
              raise RuntimeError("Google TTS client not initialized. Check credentials or use --mock.")
 
         logger.info("Generating TTS audio...")
-        updated_scenes = []
 
-        for scene in scenes:
-            dialogue_list = scene.get("dialogue", [])
-            for i, line in enumerate(dialogue_list):
-                character = line["character"]
-                text = line["text"]
-                filename = f"{scene['id']}_{character}_{i}.wav".replace(" ", "_")
-                filepath = os.path.join(self.output_dir, filename)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_line = {}
 
-                # Skip if already exists
-                if os.path.exists(filepath):
-                    line["audio_file"] = filepath
-                    continue
+            for scene in scenes:
+                dialogue_list = scene.get("dialogue", [])
+                for i, line in enumerate(dialogue_list):
+                    character = line["character"]
+                    text = line["text"]
+                    filename = f"{scene['id']}_{character}_{i}.wav".replace(" ", "_")
+                    filepath = os.path.join(self.output_dir, filename)
 
-                voice_config = self.voice_map.get(character, self.voice_map["NARRATOR"])
+                    # Skip if already exists
+                    if os.path.exists(filepath):
+                        line["audio_file"] = filepath
+                        continue
 
-                synthesis_input = texttospeech.SynthesisInput(text=text)
-                voice = texttospeech.VoiceSelectionParams(
-                    language_code="en-US",
-                    name=voice_config["name"],
-                    ssml_gender=voice_config["gender"]
-                )
-                audio_config = texttospeech.AudioConfig(
-                    audio_encoding=texttospeech.AudioEncoding.LINEAR16
-                )
+                    voice_config = self.voice_map.get(character, self.voice_map["NARRATOR"])
 
+                    future = executor.submit(self._synthesize_worker, text, voice_config, filepath)
+                    future_to_line[future] = (line, character)
+
+            for future in concurrent.futures.as_completed(future_to_line):
+                line, character = future_to_line[future]
                 try:
-                    response = self.client.synthesize_speech(
-                        input=synthesis_input, voice=voice, audio_config=audio_config
-                    )
-
-                    with open(filepath, "wb") as out:
-                        out.write(response.audio_content)
-
+                    filepath = future.result()
                     line["audio_file"] = filepath
                     logger.info(f"Generated audio: {filepath}")
-
                 except Exception as e:
                     logger.error(f"Failed to generate TTS for {character}: {e}")
 
-            updated_scenes.append(scene)
-
-        return updated_scenes
+        return scenes
 
     def check_external_audio(self, scenes: List[Dict[str, Any]]) -> List[str]:
         missing_files = []
