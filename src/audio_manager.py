@@ -46,6 +46,7 @@ class AudioManager:
 
         logger.info("Generating TTS audio...")
         updated_scenes = []
+        existing_files = set(os.listdir(self.output_dir))
 
         for scene in scenes:
             dialogue_list = scene.get("dialogue", [])
@@ -56,7 +57,7 @@ class AudioManager:
                 filepath = os.path.join(self.output_dir, filename)
 
                 # Skip if already exists
-                if os.path.exists(filepath):
+                if filename in existing_files:
                     line["audio_file"] = filepath
                     continue
 
@@ -92,13 +93,14 @@ class AudioManager:
 
     def check_external_audio(self, scenes: List[Dict[str, Any]]) -> List[str]:
         missing_files = []
+        existing_files = set(os.listdir(self.output_dir))
         for scene in scenes:
             for i, line in enumerate(scene.get("dialogue", [])):
                 character = line["character"]
                 expected_filename = f"{scene['id']}_{character}_{i}.wav".replace(" ", "_")
                 filepath = os.path.join(self.output_dir, expected_filename)
 
-                if not os.path.exists(filepath):
+                if expected_filename not in existing_files:
                     missing_files.append(expected_filename)
                 else:
                     line["audio_file"] = filepath
@@ -112,25 +114,26 @@ class MockAudioManager:
 
     def generate_tts(self, scenes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         logger.info("MOCK: Generating audio...")
+        existing_files = set(os.listdir(self.output_dir))
         for scene in scenes:
             for i, line in enumerate(scene.get("dialogue", [])):
                 character = line["character"]
                 filename = f"{scene['id']}_{character}_{i}.wav".replace(" ", "_")
                 filepath = os.path.join(self.output_dir, filename)
 
-                # Generate a 2-second silent WAV file
-                self._create_silent_wav(filepath, duration_sec=2)
+                if filename not in existing_files:
+                    # Generate a 2-second silent WAV file
+                    self._create_silent_wav(filepath, duration_sec=2)
+                    logger.info(f"MOCK: Created {filepath}")
+
                 line["audio_file"] = filepath
-                logger.info(f"MOCK: Created {filepath}")
+
         return scenes
 
     def check_external_audio(self, scenes: List[Dict[str, Any]]) -> List[str]:
         return []
 
     def _create_silent_wav(self, filepath: str, duration_sec: int = 2, sample_rate: int = 44100):
-        if os.path.exists(filepath):
-            return
-
         num_samples = duration_sec * sample_rate
         # Create silent frames (all zeros)
         # linear16, mono
