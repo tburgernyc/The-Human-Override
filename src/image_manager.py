@@ -121,20 +121,39 @@ class MockImageManager:
         if not words:
             return lines
 
-        current_line = words[0]
-        for word in words[1:]:
-            # Check width if we add this word
+        # Optimization: Pre-calculate widths to avoid repeated full-string measurements
+        try:
+            # Prefer getlength() (Pillow >= 9.2) as it handles spaces correctly
+            space_width = font.getlength(" ")
+            def get_width(s):
+                return font.getlength(s)
+        except AttributeError:
             try:
-                bbox = font.getbbox(current_line + " " + word)
-                w = bbox[2] - bbox[0]
+                # Fallback to getsize() (Pillow < 10)
+                space_width = font.getsize(" ")[0]
+                def get_width(s):
+                    return font.getsize(s)[0]
             except AttributeError:
-                 # Fallback for old Pillow versions or default font
-                 w = len(current_line + " " + word) * 10
+                # Fallback for very old Pillow or limited default font
+                space_width = 10
+                def get_width(s):
+                    return len(s) * 10
 
-            if w <= max_width:
-                current_line += " " + word
+        current_line_words = [words[0]]
+        current_line_width = get_width(words[0])
+
+        for word in words[1:]:
+            word_width = get_width(word)
+            # Check width if we add this word (space + word)
+            new_width = current_line_width + space_width + word_width
+
+            if new_width <= max_width:
+                current_line_words.append(word)
+                current_line_width = new_width
             else:
-                lines.append(current_line)
-                current_line = word
-        lines.append(current_line)
+                lines.append(" ".join(current_line_words))
+                current_line_words = [word]
+                current_line_width = word_width
+
+        lines.append(" ".join(current_line_words))
         return lines
