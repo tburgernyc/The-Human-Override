@@ -3,6 +3,7 @@ import logging
 from typing import List, Dict, Any, Optional
 import wave
 import struct
+from concurrent.futures import ThreadPoolExecutor
 
 from config.settings import Config
 
@@ -45,7 +46,8 @@ class AudioManager:
              raise RuntimeError("Google TTS client not initialized. Check credentials or use --mock.")
 
         logger.info("Generating TTS audio...")
-        updated_scenes = []
+
+        tasks = []
 
         for scene in scenes:
             dialogue_list = scene.get("dialogue", [])
@@ -60,35 +62,49 @@ class AudioManager:
                     line["audio_file"] = filepath
                     continue
 
-                voice_config = self.voice_map.get(character, self.voice_map["NARRATOR"])
+                tasks.append({
+                    "line": line,
+                    "text": text,
+                    "character": character,
+                    "filepath": filepath
+                })
 
-                synthesis_input = texttospeech.SynthesisInput(text=text)
-                voice = texttospeech.VoiceSelectionParams(
-                    language_code="en-US",
-                    name=voice_config["name"],
-                    ssml_gender=voice_config["gender"]
+        def process_task(task):
+            character = task["character"]
+            text = task["text"]
+            filepath = task["filepath"]
+            line = task["line"]
+
+            voice_config = self.voice_map.get(character, self.voice_map["NARRATOR"])
+
+            synthesis_input = texttospeech.SynthesisInput(text=text)
+            voice = texttospeech.VoiceSelectionParams(
+                language_code="en-US",
+                name=voice_config["name"],
+                ssml_gender=voice_config["gender"]
+            )
+            audio_config = texttospeech.AudioConfig(
+                audio_encoding=texttospeech.AudioEncoding.LINEAR16
+            )
+
+            try:
+                response = self.client.synthesize_speech(
+                    input=synthesis_input, voice=voice, audio_config=audio_config
                 )
-                audio_config = texttospeech.AudioConfig(
-                    audio_encoding=texttospeech.AudioEncoding.LINEAR16
-                )
 
-                try:
-                    response = self.client.synthesize_speech(
-                        input=synthesis_input, voice=voice, audio_config=audio_config
-                    )
+                with open(filepath, "wb") as out:
+                    out.write(response.audio_content)
 
-                    with open(filepath, "wb") as out:
-                        out.write(response.audio_content)
+                line["audio_file"] = filepath
+                logger.info(f"Generated audio: {filepath}")
 
-                    line["audio_file"] = filepath
-                    logger.info(f"Generated audio: {filepath}")
+            except Exception as e:
+                logger.error(f"Failed to generate TTS for {character}: {e}")
 
-                except Exception as e:
-                    logger.error(f"Failed to generate TTS for {character}: {e}")
+        with ThreadPoolExecutor() as executor:
+            list(executor.map(process_task, tasks))
 
-            updated_scenes.append(scene)
-
-        return updated_scenes
+        return scenes
 
     def check_external_audio(self, scenes: List[Dict[str, Any]]) -> List[str]:
         missing_files = []
