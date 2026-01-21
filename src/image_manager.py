@@ -1,6 +1,7 @@
 import os
 import logging
 from typing import List, Dict, Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from config.settings import Config
 from PIL import Image, ImageDraw, ImageFont
@@ -27,43 +28,65 @@ class ImageManager:
         else:
             self.model = None
 
+    def _generate_single_image(self, scene: Dict[str, Any]) -> Dict[str, Any]:
+        scene_id = scene["id"]
+        prompt = scene["visual_prompt"]
+        filepath = os.path.join(self.output_dir, f"{scene_id}.png")
+
+        if os.path.exists(filepath):
+            scene["image_file"] = filepath
+            return scene
+
+        logger.info(f"Generating image for {scene_id}...")
+        try:
+            images = self.model.generate_images(
+                prompt=prompt,
+                number_of_images=1,
+                language="en",
+                aspect_ratio="16:9",
+                safety_filter_level="block_some",
+                person_generation="allow_adult"
+            )
+
+            if images:
+                images[0].save(location=filepath, include_generation_parameters=False)
+                scene["image_file"] = filepath
+                logger.info(f"Saved image: {filepath}")
+            else:
+                logger.error(f"No images generated for {scene_id}")
+                scene["image_file"] = None # Explicitly set to None on failure
+
+        except Exception as e:
+            logger.error(f"Failed to generate image for {scene_id}: {e}")
+            scene["image_file"] = None # Explicitly set to None on error
+
+        return scene
+
     def generate_images(self, scenes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         if not self.model:
-             raise RuntimeError("Imagen model not initialized. Check credentials or use --mock.")
+            raise RuntimeError("Imagen model not initialized. Check credentials or use --mock.")
 
-        updated_scenes = []
-        for scene in scenes:
-            scene_id = scene["id"]
-            prompt = scene["visual_prompt"]
-            filepath = os.path.join(self.output_dir, f"{scene_id}.png")
+        # Use a ThreadPoolExecutor to generate images concurrently
+        with ThreadPoolExecutor(max_workers=Config.MAX_CONCURRENT_REQUESTS) as executor:
+            # Create a future for each scene
+            future_to_scene = {executor.submit(self._generate_single_image, scene): scene for scene in scenes}
 
-            if os.path.exists(filepath):
-                scene["image_file"] = filepath
-                updated_scenes.append(scene)
-                continue
+            updated_scenes = []
+            for future in as_completed(future_to_scene):
+                original_scene = future_to_scene[future]
+                try:
+                    # Get the result from the future
+                    updated_scene = future.result()
+                    updated_scenes.append(updated_scene)
+                except Exception as e:
+                    logger.error(f"An exception occurred for scene {original_scene['id']}: {e}")
+                    # Even on error, add the original scene back to maintain list integrity
+                    original_scene['image_file'] = None
+                    updated_scenes.append(original_scene)
 
-            logger.info(f"Generating image for {scene_id}...")
-            try:
-                images = self.model.generate_images(
-                    prompt=prompt,
-                    number_of_images=1,
-                    language="en",
-                    aspect_ratio="16:9",
-                    safety_filter_level="block_some",
-                    person_generation="allow_adult"
-                )
-
-                if images:
-                    images[0].save(location=filepath, include_generation_parameters=False)
-                    scene["image_file"] = filepath
-                    logger.info(f"Saved image: {filepath}")
-                else:
-                    logger.error(f"No images generated for {scene_id}")
-
-            except Exception as e:
-                logger.error(f"Failed to generate image for {scene_id}: {e}")
-
-            updated_scenes.append(scene)
+        # Sort the results back into the original order, as concurrent execution can disorder them
+        scene_order_map = {scene["id"]: i for i, scene in enumerate(scenes)}
+        updated_scenes.sort(key=lambda s: scene_order_map[s["id"]])
 
         return updated_scenes
 
