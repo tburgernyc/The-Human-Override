@@ -72,6 +72,12 @@ class MockImageManager:
     def __init__(self):
         self.output_dir = Config.IMAGES_DIR
         os.makedirs(self.output_dir, exist_ok=True)
+        try:
+            self.font = ImageFont.truetype("DejaVuSans.ttf", 40)
+            self.title_font = ImageFont.truetype("DejaVuSans-Bold.ttf", 80)
+        except IOError:
+            self.font = ImageFont.load_default()
+            self.title_font = ImageFont.load_default()
 
     def generate_images(self, scenes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         logger.info("MOCK: Generating images...")
@@ -94,23 +100,14 @@ class MockImageManager:
         img = Image.new('RGB', (width, height), color=(73, 109, 137))
         draw = ImageDraw.Draw(img)
 
-        # Load a font (or default if not found)
-        try:
-            # Try to use a standard font
-            font = ImageFont.truetype("DejaVuSans.ttf", 40)
-            title_font = ImageFont.truetype("DejaVuSans-Bold.ttf", 80)
-        except IOError:
-            font = ImageFont.load_default()
-            title_font = ImageFont.load_default()
-
         # Draw Title
-        draw.text((50, 50), title, font=title_font, fill=(255, 255, 255))
+        draw.text((50, 50), title, font=self.title_font, fill=(255, 255, 255))
 
         # Draw Prompt Text (wrapped)
         margin = 50
         offset = 200
-        for line in self._wrap_text(text, font, width - 2*margin):
-            draw.text((margin, offset), line, font=font, fill=(255, 255, 255))
+        for line in self._wrap_text(text, self.font, width - 2*margin):
+            draw.text((margin, offset), line, font=self.font, fill=(255, 255, 255))
             offset += 50
 
         img.save(filepath)
