@@ -22,3 +22,4 @@ class Config:
     # Defaults
     DEFAULT_RESOLUTION = (1920, 1080)
     FPS = 24
+    MAX_CONCURRENT_REQUESTS = 5
